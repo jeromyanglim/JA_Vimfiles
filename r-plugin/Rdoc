@@ -1,0 +1,139 @@
+source                      package:base                      R Documentation
+
+_R_e_a_d _R _C_o_d_e _f_r_o_m _a _F_i_l_e _o_r _a _C_o_n_n_e_c_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     'source' causes R to accept its input from the named file or URL (the
+     name must be quoted) or connection.  Input is read and 'parse'd by from
+     that file until the end of the file is reached, then the parsed
+     expressions are evaluated sequentially in the chosen environment.
+
+_U_s_a_g_e:
+
+     source(file, local = FALSE, echo = verbose, print.eval = echo,
+            verbose = getOption("verbose"),
+            prompt.echo = getOption("prompt"),
+            max.deparse.length = 150, chdir = FALSE,
+            encoding = getOption("encoding"),
+            continue.echo = getOption("continue"),
+            skip.echo = 0, keep.source = getOption("keep.source"))
+     
+_A_r_g_u_m_e_n_t_s:
+
+    file: a connection or a character string giving the pathname of the file
+          or URL to read from.  '""' indicates the connection 'stdin()'.
+
+   local: if 'local' is 'FALSE', the statements scanned are evaluated in the
+          user's workspace (the global environment), otherwise in the
+          environment calling 'source'.
+
+    echo: logical; if 'TRUE', each expression is printed after parsing, before
+          evaluation.
+
+print.eval: logical; if 'TRUE', the result of 'eval(i)' is printed for each
+          expression 'i'; defaults to the value of 'echo'.
+
+ verbose: if 'TRUE', more diagnostics (than just 'echo = TRUE') are printed
+          during parsing and evaluation of input, including extra info for
+          *each* expression.
+
+prompt.echo: character; gives the prompt to be used if 'echo = TRUE'.
+
+max.deparse.length: integer; is used only if 'echo' is 'TRUE' and gives the
+          maximal number of characters output for the deparse of a single
+          expression.
+
+   chdir: logical; if 'TRUE' and 'file' is a pathname, the R working directory
+          is temporarily changed to the directory containing 'file' for
+          evaluating.
+
+encoding: character vector.  The encoding(s) to be assumed when 'file' is a
+          character string: see 'file'.  A possible value is '"unknown"' when
+          the encoding is guesses: see the 'Details'.
+
+continue.echo: character; gives the prompt to use on continuation lines if
+          'echo = TRUE'.
+
+skip.echo: integer; how many comment lines at the start of the file to skip if
+          'echo = TRUE'.
+
+keep.source: logical: should the source formatting be retained when echo
+          expressions, if possible?
+
+_D_e_t_a_i_l_s:
+
+     Note that running code via 'source' differs in a few respects from
+     entering it at the R command line.  Since expressions are not executed at
+     the top level, auto-printing is not done.  So you will need to include
+     explicit 'print' calls for things you want to be printed (and remember
+     that this includes plotting by 'lattice', FAQ Q7.22).  Since the complete
+     file is parsed before any of it is run, syntax errors result in none of
+     the code being run. If an error occurs in running a syntactically correct
+     script, anything assigned into the workspace by code that has been run
+     will be kept (just as from the command line), but diagnostic information
+     such as 'traceback()' will contain additional calls to 'eval.with.vis',
+     an undocumented internal function.
+
+     All versions of R accept input from a connection with end of line marked
+     by LF (as used on Unix), CRLF (as used on DOS/Windows) or CR (as used on
+     classic Mac OS) and map this to newline.  The final line can be
+     incomplete, that is missing the final end-of-line marker.
+
+     If 'options'("keep.source") is true (the default in interactive use), the
+     source of functions is kept so they can be listed exactly as input. This
+     imposes a limit of 128K bytes on the function size and a nesting limit of
+     265.  Use 'keep.source = FALSE' when these limits might take effect: if
+     exceeded they generate an error.
+
+     This paragraph applies if 'file' is a filename (rather than a
+     connection).  If 'encoding = "unknown"', an attempt is made to guess the
+     encoding.  The result of 'localeToCharset()' is used as a guide.  If
+     'encoding' has two or more elements, they are tried in turn until the
+     file/URL can be read without error in the trial encoding.  If an actual
+     'encoding' is specified (rather than the default or '"unknown"') then
+     character strings in the result will be translated to the current
+     encoding and marked as such (see 'Encoding') in Latin-1 and UTF-8
+     locales.
+
+     If 'file' is a connection (including one specified by '""', it is not
+     possible to re-encode the input inside 'source', and so the 'encoding'
+     argument is just used to mark character strings in the parsed input: see
+     'parse'.
+
+     Unlike input from a console, lines in the file or on a connection can
+     contain an unlimited number of characters.
+
+     When 'skip.echo > 0', that many comment lines at the start of the file
+     will not be echoed.  This does not affect the execution of the code at
+     all.  If there are executable lines within the first 'skip.echo' lines,
+     echoing will start with the first of them.
+
+     If 'echo' is true and a deparsed expression exceeds 'max.deparse.length',
+     that many characters are output followed by ' .... [TRUNCATED] '.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole.
+
+_S_e_e _A_l_s_o:
+
+     'demo' which uses 'source'; 'eval', 'parse' and 'scan';
+     'options("keep.source")'.
+
+     'sys.source' which is a streamlined version to source a file into an
+     environment.
+
+_E_x_a_m_p_l_e_s:
+
+     ## If you want to source() a bunch of files, something like
+     ## the following may be useful:
+      sourceDir <- function(path, trace = TRUE, ...) {
+         for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
+            if(trace) cat(nm,":")           
+            source(file.path(path, nm), ...)
+            if(trace) cat("\n")
+         }
+      }
+     

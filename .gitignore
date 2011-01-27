@@ -1,0 +1,4 @@
+*.pyc
+tmp/*
+r-plugin/Rsource*
+backup/*
