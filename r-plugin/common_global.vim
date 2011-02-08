@@ -11,7 +11,7 @@
 "  A copy of the GNU General Public License is available at
 "  http://www.r-project.org/Licenses/
 
-"==========================================================================
+"=====================================================================<F2>=====
 " Authors: Jakson Alves de Aquino <jalvesaq@gmail.com>
 "          Jose Claudio Faria
 "          
@@ -464,7 +464,9 @@ function SendCmdToR(cmd)
       let str = str . printf("\\x%02X", char2nr(cmd[i]))
     endfor
     exe s:py . " SendToRPy(b'" . str . "')"
-    silent exe '!start WScript "' . g:rplugin_jspath . '" "' . expand("%") . '"'
+    "Anglim change
+    silent exe '!start WScript "' . g:rplugin_jspath . '" "' . expand("%:t") . '"'
+    "Anglim end change
     " call RestoreClipboardPy()
     return 1
   endif
@@ -549,16 +551,30 @@ function SendCmdToR(cmd)
     let rlog = substitute(rlog, '\r', ' ', 'g')
     call RWarningMsg(rlog)
     return 0
-  endif
-  return 1
+endif
+return 1
 endfunction
 
 " Get the word either under or after the cursor.
 " Works for word(| where | is the cursor position.
 function RGetKeyWord()
-  " Go back some columns if character under cursor is not valid
+    " Go back some columns if character under cursor is not valid
   let save_cursor = getpos(".")
   let curline = line(".")
+
+  " Anglim start change
+  let start_selection = getpos("'<")
+  let end_selection = getpos("'>")
+  if start_selection[1] == end_selection[1] && 
+              \ start_selection[2] != end_selection[2] && 
+              \ save_cursor[1] == start_selection[1] &&
+              \ save_cursor[2] == end_selection[2]
+    let line = getline(".")
+    let rkeyword = line[start_selection[2] -1 : end_selection[2] - 2]
+    return rkeyword
+  endif
+  " Anglim end change
+
   let line = getline(curline)
   " line index starts in 0; cursor index starts in 1:
   let i = col(".") - 1
@@ -831,7 +847,9 @@ endfunction
 function RClearConsole()
   if has("gui_win32") && g:vimrplugin_conqueplugin == 0
     exe s:py . " RClearConsolePy()"
-    silent exe '!start WScript "' . g:rplugin_jspath . '" "' . expand("%") . '"'
+    " Anglim change
+    silent exe '!start WScript "' . g:rplugin_jspath . '" "' . expand("%:t") . '"'
+    " Anglim end change
   else
     call SendCmdToR("\014")
   endif
@@ -1387,6 +1405,40 @@ function RCreateMaps(type, plug, combo, target)
     endif
   endif
 endfunction
+
+" Anglim change
+" removed carriage return in an attempt to resolve issue of console not
+" returning
+"function RCreateMaps(type, plug, combo, target)
+  "if a:type =~ '0'
+    "let tg = a:target
+    "let il = 'i'
+  "else
+    "let tg = a:target
+    "let il = 'a'
+  "endif
+  "if a:type =~ "n"
+    "if hasmapto(a:plug, "n")
+      "exec 'noremap <buffer> ' . a:plug . ' ' . tg
+    "else
+      "exec 'noremap <buffer> <LocalLeader>' . a:combo . ' ' . tg
+    "endif
+  "endif
+  "if a:type =~ "v"
+    "if hasmapto(a:plug, "v")
+      "exec 'vnoremap <buffer> ' . a:plug . ' <Esc>' . tg
+    "else
+      "exec 'vnoremap <buffer> <LocalLeader>' . a:combo . ' <Esc>' . tg
+    "endif
+  "endif
+  "if a:type =~ "i"
+    "if hasmapto(a:plug, "i")
+      "exec 'inoremap <buffer> ' . a:plug . ' <Esc>' . tg . il
+    "else
+      "exec 'inoremap <buffer> <LocalLeader>' . a:combo . ' <Esc>' . tg . il
+    "endif
+  "endif
+"endfunction
 
 function MakeRMenu()
   if g:rplugin_hasmenu == 1 || !has("gui_running")
