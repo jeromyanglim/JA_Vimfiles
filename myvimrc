@@ -3,8 +3,10 @@
 let mapleader="," 
 let maplocalleader=";"
 " remap comma (i.e., for reversing line find)
-nnoremap ,,, , 
-vnoremap ,,, ,
+nnoremap ,, , 
+vnoremap ,, ,
+nnoremap ;; ;
+vnoremap ;; ;
 
 set nocompatible
 syntax enable "enable syntax highlighting 
@@ -71,7 +73,8 @@ au BufEnter *vimrc setlocal foldmethod=marker
 map <Leader>sp :setlocal spell!<CR> 
 set showcmd "   Show (partial) command in the last line of the screen
 set number " Show line numbers
-set hlsearch "show matches highlighted
+"set hlsearch "show matches highlighted (disabled because I found it distracting)
+set nohlsearch
 set incsearch " show search matches while typing
 set ignorecase " Ignore case when search
 set smartcase "except when capital letters used
@@ -80,8 +83,8 @@ set textwidth=80 "number of columns before file auto-wraps
 " maximise on start
 au GUIEnter * simalt ~x
  
-" remove highlights
-nmap <silent> <leader>n :silent nohlsearch<CR>
+" toggle hlsearch
+nmap <silent> <leader>n :set hlsearch! hlsearch?<CR>
 
 " Make Ctrl+Backspace delete previous word in Insert Mode and command-line mode
 imap <C-BS> <C-W>
@@ -91,6 +94,9 @@ cmap <C-BS> <C-W>
 map <Leader>cd :cd %:p:h<CR>
 
 " Easy Session Save (ss) or Session Load (sl)
+" removed 'options' from sessionoptions; makes it easier to add plugin
+" restart Vim and restore files, windows, and buffers.
+set sessionoptions=blank,buffers,curdir,folds,help,tabpages,winsize  
 map <Leader>ss :mksession! $HOME/vim_session <cr> 
 map <Leader>sl :source $HOME/vim_session <cr>     
 
@@ -119,6 +125,8 @@ map <Leader>w :exe Browser()<CR>
 " autocmd InsertEnter * set cursorline 
 " autocmd InsertLeave * set nocursorline
 
+" prevents x from deleting folds (from ZyX on SO)
+nnoremap <expr> x ((foldclosed('.')==-1)?('x'):('zx'))
 
 " always add the current file's directory to the path if not already there
 autocmd BufRead *
@@ -162,6 +170,8 @@ endfunction
 "Toggle the file explorer program Nerd Tree.
 map <F2> :NERDTreeToggle<CR>
 let NERDTreeShowBookmarks=1 " Show bookmarks on startup
+" open Nerd Tree in folder of file in active buffer
+map <Leader>nt :NERDTree %:p:h<CR>
 
 " R-Plugin Customisations {{{2
 " Source my customised versions of the functions
@@ -195,8 +205,8 @@ let vimrplugin_sleeptime = 0.1
 " function! SendSexpr()
 
    
-map <LocalLeader>p2 ?>>=<Enter>jV/^@<Enter>k ;se<Esc>
-map <LocalLeader>p3 0/Sexpr{<CR>wvi};se<Esc>
+map <LocalLeader>r2 ?>>=<Enter>jV/^@<Enter>k ;se<Esc>
+map <LocalLeader>r3 0/Sexpr{<CR>wvi};se<Esc>
 
 
 " R code folding
@@ -235,17 +245,71 @@ let g:Tex_SmartKeyQuote = 0 "disables annoying quotation mark conversion
 
 let Tex_FoldedSections ="part,chapter,section,%%fakesection,subsection,subsubsection,paragraph,pd"
 
+"toggle fold style
+function! ToggleFoldSectionsPD()
+    if g:Tex_FoldedSections == "part,chapter,section,%%fakesection,subsection,subsubsection,paragraph,pd"
+        let g:Tex_FoldedSections = "part,chapter,section,%%fakesection,subsection,subsubsection,paragraph"
+        let currentft = &filetype
+        set filetype=tex
+        call MakeTexFolds(1)
+        exe "set filetype=" . currentft
+        return
+    endif
+    if g:Tex_FoldedSections == "part,chapter,section,%%fakesection,subsection,subsubsection,paragraph"
+        let g:Tex_FoldedSections = "part,chapter,section,%%fakesection,subsection,subsubsection,paragraph,pd"
+        let currentft = &filetype
+        set filetype=tex
+        call MakeTexFolds(1)
+        exe "set filetype=" . currentft
+        return
+    endif
+endfunction
+map <leader>pd :call ToggleFoldSectionsPD()<CR>
+  
 " for now I'm preferring to manually insert folds using pd instead of auto
 " folding the environments below
 " let Tex_FoldedEnvironments = "verbatim,comment,eq,gather,align,figure,table,thebibliography,keywords,abstract,titlepage"
-let Tex_FoldedEnvironments = ""
+let Tex_FoldedEnvironments = "frame"
 " let Tex_FoldedMisc = "item,preamble,<<<"
 let Tex_FoldedMisc = "preamble"
 
 
+" ensure latex style files are treated as tex files
+au BufEnter *.sty set filetype=tex 
+
+" adjust indentation for tex files
+au BufEnter *.tex setlocal tabstop=2
+au BufEnter *.tex setlocal shiftwidth=2
+
+" update folds on save
+au BufWritePre *. set call MakeTexFolds(1)
 
 " consider disabling built in indentation
 let g:tex_indent_items = 0
+
+" Beamer {{{2
+function! BeamerLevel()
+    if getline(v:lnum) =~ '^\\section.*$' || getline(v:lnum) =~ '^%# ' || 
+                \ getline(v:lnum) =~ '\\begin{document}' || 
+                \ getline(v:lnum) =~ '\\end{document}'
+        return ">1"
+    endif
+    if getline(v:lnum) =~ '^\\subsection.*$' || getline(v:lnum) =~ '^%## '
+        return ">2"
+    endif
+    " think about whether 2 or 3 would be better
+    if getline(v:lnum) =~ '\\begin{frame}'
+        return ">2"
+    endif
+    return "=" 
+endfunction     
+
+function! BeamerFold()
+    setlocal foldexpr=BeamerLevel()
+    setlocal foldmethod=expr     
+endfunction
+
+
 
 " FuzzyFinding {{{2
 " nmap <Leader>fb :FuzzyFinderBuffer<CR>
@@ -263,6 +327,13 @@ let g:voom_tree_width = 50 " default is 50 columns wide
 " set shellxquote=\"
 
 
+set shellcmdflag=-c
+set shellquote=
+set shellslash          " Use the forward slash for expansion.
+set shellxquote=\"
+set shell=c:/cygwin/bin/bash.exe " Use the bash shell
+set shellpipe=2>&1\|\ tee
+set shellredir=>%s\ 2>&1
 
                               
 " Markdown customisations {{{2
@@ -294,8 +365,12 @@ endfunction
 au BufEnter *.md setlocal foldexpr=MarkdownLevel(2)  
 au BufEnter *.md setlocal foldmethod=expr     
 au BufEnter *.md setlocal autoindent
-au BufEnter *.md setlocal colorcolumn=85
 
+" Copy HTML of markdown file to system clipboard
+function! MarkdownToHTML()
+
+endfunction
+nmap <leader>md :%s/^#/###/<cr>:%!perl ~/Markdown.pl<cr>gg"*yGu
 
 " vimoutliner {{{2
 " adopt a smaller indentation
@@ -321,8 +396,40 @@ au BufWritePre *.otl :silent g/^\s*$/ d
 
 
 " MRU {{{2
-nmap <Leader>m :MRU<CR>
+" Saves the buffer if it has unsaved changes and loads MRU
+" This is a hack to ensure that when I press ENTER in MRU
+" file opens in the current window
+map <Leader>m :update<CR>:MRU<CR>
+let MRU_Max_Entries = 150
 
+" Inquisit {{{2
+" Functions to make it easier to write Inquisit scripts
+function! InquisitHelp(topic)
+    let commandtext = "keyhh -\\\#alink \"" . a:topic . "\" \"c:\\Program Files\\Millisecond Software\\Inquisit 3\\inquisit.chm\""
+    exe ":!start " . commandtext
+    return
+endfunction
 
+au BufEnter *.exp set ft=inquisit
  
+function! InquisitLevel(elements)
+    " TODO: add headings: 1 (just allow #) or 2 (allow nested ##)
+    " elements: 0 or 1
+    if getline(v:lnum) =~ '^# .*$'
+        return ">1"
+    endif
+    if a:elements && getline(v:lnum) =~ '^<[a-zA-Z].*$'
+        return ">2"
+    endif
+    return "=" 
+endfunction                  
+au BufEnter *.exp setlocal foldexpr=InquisitLevel(1)
+au BufEnter *.exp setlocal foldmethod=expr     
+au BufEnter *.exp setlocal iskeyword=a-z,A-Z,48-57,.
+
+function! RunInquisit()
+    let cmdstring = "!start inquisit " . '"%:p"'
+    exe cmdstring
+endfunction
+
 

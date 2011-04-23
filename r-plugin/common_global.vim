@@ -740,17 +740,28 @@ function SendSelectionToR(e, m)
     return
   endif
 
+  " anglim change
+  let startpos = getpos("'<")
+  " end anglim change
+
   let b:needsnewomnilist = 1
   if line("'<") == line("'>")
     let i = col("'<") - 1
-    " updated to -1 to try to fix
-    let j = col("'>") - i - 1
+    " anglim change
+    " let j = col("'>") - i
+    let j = col("'>") - i - (&selection == "exclusive")
+    " end anglim change
     let l = getline("'<")
     let line = strpart(l, i, j)
     let ok = SendCmdToR(line)
     if ok && a:m =~ "down"
       call GoDown()
+      return
     endif
+    " anglim change
+    call cursor(startpos[1], startpos[2])
+    normal! \<Esc>
+    " end anglim change
     return
   endif
   let lines = getline("'<", "'>")
@@ -761,7 +772,11 @@ function SendSelectionToR(e, m)
   if a:m == "down"
     call GoDown()
   else
-    normal! gv
+    " normal! gv
+    " anglim change
+    call cursor(startpos[1], startpos[2])
+    normal! \<Esc>
+    " end anglim change
   endif
 endfunction
 
@@ -1376,13 +1391,22 @@ endfunction
 "   combo: the combination of letter that make the shortcut
 "   target: the command or function to be called
 function RCreateMaps(type, plug, combo, target)
+  "if a:type =~ '0'
+    "let tg = a:target . '<CR>0'
+    "let il = 'i'
+  "else
+    "let tg = a:target . '<CR>'
+    "let il = 'a'
+  "endif
+  " anglim change (removed cursor change)
   if a:type =~ '0'
-    let tg = a:target . '<CR>0'
-    let il = 'i'
+    let tg = a:target . '<CR>'
+    let il = 'i' 
   else
     let tg = a:target . '<CR>'
-    let il = 'a'
+    let il = 'a' 
   endif
+  " end anglim change
   if a:type =~ "n"
     if hasmapto(a:plug, "n")
       exec 'noremap <buffer> ' . a:plug . ' ' . tg
@@ -1406,39 +1430,7 @@ function RCreateMaps(type, plug, combo, target)
   endif
 endfunction
 
-" Anglim change
-" removed carriage return in an attempt to resolve issue of console not
-" returning
-"function RCreateMaps(type, plug, combo, target)
-  "if a:type =~ '0'
-    "let tg = a:target
-    "let il = 'i'
-  "else
-    "let tg = a:target
-    "let il = 'a'
-  "endif
-  "if a:type =~ "n"
-    "if hasmapto(a:plug, "n")
-      "exec 'noremap <buffer> ' . a:plug . ' ' . tg
-    "else
-      "exec 'noremap <buffer> <LocalLeader>' . a:combo . ' ' . tg
-    "endif
-  "endif
-  "if a:type =~ "v"
-    "if hasmapto(a:plug, "v")
-      "exec 'vnoremap <buffer> ' . a:plug . ' <Esc>' . tg
-    "else
-      "exec 'vnoremap <buffer> <LocalLeader>' . a:combo . ' <Esc>' . tg
-    "endif
-  "endif
-  "if a:type =~ "i"
-    "if hasmapto(a:plug, "i")
-      "exec 'inoremap <buffer> ' . a:plug . ' <Esc>' . tg . il
-    "else
-      "exec 'inoremap <buffer> <LocalLeader>' . a:combo . ' <Esc>' . tg . il
-    "endif
-  "endif
-"endfunction
+
 
 function MakeRMenu()
   if g:rplugin_hasmenu == 1 || !has("gui_running")
